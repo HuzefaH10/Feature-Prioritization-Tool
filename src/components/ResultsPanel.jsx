@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layers, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, Fragment } from 'react';
+import { Layers } from 'lucide-react';
 import { calculateRiceScore, getScoreColorClass, getPriorityBadgeInfo, CATEGORIES, getCategoryColor } from '../utils';
 
 export default function ResultsPanel({ features, onLoadSample }) {
@@ -120,7 +120,7 @@ export default function ResultsPanel({ features, onLoadSample }) {
                 const badgeInfo = getPriorityBadgeInfo(feature.score);
 
                 return (
-                  <React.Fragment key={feature.id}>
+                  <Fragment key={feature.id}>
                     <tr onClick={() => setExpandedRow(isExpanded ? null : feature.id)} style={{cursor: 'pointer'}}>
                       <td className="col-rank">{rankDisplay}</td>
                       <td className="col-feature">
@@ -154,7 +154,7 @@ export default function ResultsPanel({ features, onLoadSample }) {
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 );
               })}
               {sorted.length === 0 && (

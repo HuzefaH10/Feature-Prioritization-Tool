@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { GripVertical, Edit2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { GripVertical, Trash2 } from 'lucide-react';
 import { calculateRiceScore, getScoreColorClass, CATEGORIES, getCategoryColor } from '../utils';
 
 export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeature, onClearAll, onLoadSample }) {
@@ -29,7 +29,8 @@ export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeat
     if (!form.name || !form.reach || !form.effort || form.effort <= 0) return;
     
     onAddFeature({
-      id: Date.now().toString(),
+      // eslint-disable-next-line react-hooks/purity
+      id: crypto.randomUUID(),
       ...form,
       rice: currentScore
     });
@@ -114,7 +115,7 @@ export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeat
         </div>
 
         <div className="mini-feature-list">
-          {features.map((f, idx) => (
+          {features.map((f) => (
             <div key={f.id} className="mini-feature-card">
               <div className="drag-handle"><GripVertical size={16} /></div>
               <div className="mini-feature-info">

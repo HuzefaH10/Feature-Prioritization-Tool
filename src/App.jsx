@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import FeatureInputPanel from './components/FeatureInputPanel'
 import ResultsPanel from './components/ResultsPanel'
@@ -11,7 +11,7 @@ function App() {
     if (saved) {
       try {
         return JSON.parse(saved)
-      } catch (e) {
+      } catch {
         return []
       }
     }
