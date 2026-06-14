@@ -852,6 +852,12 @@ input[type=range]::-webkit-slider-runnable-track {
 .quadrant-fillins { color: rgba(100, 116, 139, 0.4); align-items: flex-end; }
 .quadrant-thankless { color: rgba(239, 68, 68, 0.4); align-items: flex-end; justify-content: flex-end; }
 
+/* Recharts override to remove tooltip slide */
+.recharts-tooltip-wrapper {
+  transition: none !important;
+  animation: none !important;
+}
+
 .matrix-tooltip {
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);

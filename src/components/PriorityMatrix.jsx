@@ -20,10 +20,11 @@ const CustomTooltip = ({ active, payload }) => {
   );
 };
 
-export default function PriorityMatrix({ features }) {
+export default function PriorityMatrix({ features, filterCat }) {
   const data = useMemo(() => {
     const catGroups = {};
     features.forEach(f => {
+      if (filterCat !== 'All' && f.category !== filterCat) return;
       const score = calculateRiceScore(f.reach, f.impact, f.confidence, f.effort);
       if (score === null) return;
       const cat = f.category || 'Other';
@@ -97,7 +98,7 @@ export default function PriorityMatrix({ features }) {
           <ReferenceLine x={medianEffort} stroke="#334155" strokeDasharray="6 4" />
           <ReferenceLine y={medianImpact} stroke="#334155" strokeDasharray="6 4" />
 
-          <Tooltip content={<CustomTooltip />} cursor={false} />
+          <Tooltip content={<CustomTooltip />} cursor={false} isAnimationActive={false} animationDuration={0} />
 
           {CATEGORIES.map(cat => {
             if (!data[cat]) return null;
@@ -111,6 +112,7 @@ export default function PriorityMatrix({ features }) {
                 stroke="rgba(255,255,255,0.2)"
                 strokeWidth={1}
                 style={{ cursor: 'pointer' }}
+                isAnimationActive={false}
               />
             );
           })}
@@ -131,6 +133,7 @@ export default function PriorityMatrix({ features }) {
                 fillOpacity={0.8}
                 stroke="rgba(255,255,255,0.3)"
                 strokeWidth={1.5}
+                isAnimationActive={false}
               />
             );
           })}

@@ -147,7 +147,7 @@ export default function ResultsPanel({ features, onLoadSample, onDeleteFeature, 
 
         {/* Matrix View */}
         {activeTab === 'matrix' && (
-          <PriorityMatrix features={features} />
+          <PriorityMatrix features={features} filterCat={filterCat} />
         )}
 
         {/* Table View */}
