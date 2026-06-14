@@ -73,8 +73,21 @@ export default function PriorityMatrix({ features, filterCat }) {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart margin={{ top: 30, right: 30, bottom: 20, left: 20 }} isAnimationActive={false}>
+      <div 
+        style={{ position: 'relative', width: '100%', height: '400px' }}
+        onMouseLeave={() => setTooltip({ visible: false, x: 0, y: 0, data: null })}
+        onMouseMove={(e) => {
+          if (tooltip.visible) {
+            setTooltip(prev => ({
+              ...prev,
+              x: e.clientX,
+              y: e.clientY
+            }));
+          }
+        }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 30, right: 30, bottom: 20, left: 20 }} isAnimationActive={false}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1a1a2e" isAnimationActive={false} />
           <XAxis
             type="number"
@@ -140,7 +153,8 @@ export default function PriorityMatrix({ features, filterCat }) {
             );
           })}
         </ScatterChart>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      </div>
 
       {/* Custom tooltip rendered outside the chart */}
       {tooltip.visible && tooltip.data && (
