@@ -41,7 +41,7 @@ export default function PriorityMatrix({ features, filterCat }) {
       });
     });
     return catGroups;
-  }, [features]);
+  }, [features, filterCat]);
 
   const allPoints = Object.values(data).flat();
   if (allPoints.length === 0) return null;
