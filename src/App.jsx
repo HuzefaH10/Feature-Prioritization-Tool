@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header'
+import Footer from './components/Footer'
 import FeatureInputPanel from './components/FeatureInputPanel'
 import ResultsPanel from './components/ResultsPanel'
 import { SAMPLE_DATA } from './utils'
@@ -18,12 +19,15 @@ function App() {
     return []
   })
 
+  const [lastAddedId, setLastAddedId] = useState(null)
+
   useEffect(() => {
     localStorage.setItem('priorityiq_features', JSON.stringify(features))
   }, [features])
 
   const handleAddFeature = (feature) => {
     setFeatures(prev => [...prev, feature])
+    setLastAddedId(feature.id)
   }
 
   const handleDeleteFeature = (id) => {
@@ -52,8 +56,11 @@ function App() {
         <ResultsPanel 
           features={features}
           onLoadSample={handleLoadSample}
+          onDeleteFeature={handleDeleteFeature}
+          lastAddedId={lastAddedId}
         />
       </main>
+      <Footer />
     </div>
   )
 }

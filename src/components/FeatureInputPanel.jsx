@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
+import { GripVertical, Trash2, Check } from 'lucide-react';
 import { calculateRiceScore, getScoreColorClass, CATEGORIES, getCategoryColor } from '../utils';
 
 export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeature, onClearAll, onLoadSample }) {
-  const initialForm = {
+  const initialForm = useMemo(() => ({
     name: '',
     description: '',
     reach: '',
@@ -11,9 +11,10 @@ export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeat
     confidence: 80,
     effort: '',
     category: 'UX'
-  };
+  }), []);
 
   const [form, setForm] = useState(initialForm);
+  const [addedFeedback, setAddedFeedback] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -25,17 +26,30 @@ export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeat
 
   const currentScore = calculateRiceScore(form.reach, form.impact, form.confidence, form.effort);
   
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     if (!form.name || !form.reach || !form.effort || form.effort <= 0) return;
     
+    const id = crypto.randomUUID();
     onAddFeature({
-      // eslint-disable-next-line react-hooks/purity
-      id: crypto.randomUUID(),
+      id,
       ...form,
       rice: currentScore
     });
     setForm(initialForm);
+    setAddedFeedback(true);
+    setTimeout(() => setAddedFeedback(false), 1500);
+  }, [form, currentScore, onAddFeature, initialForm]);
+
+  // Live score preview background tint
+  const getScoreBgTint = (score) => {
+    if (score === null) return {};
+    if (score > 200) return { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.2)' };
+    if (score > 100) return { backgroundColor: 'rgba(124, 58, 237, 0.08)', borderColor: 'rgba(124, 58, 237, 0.2)' };
+    if (score >= 50) return { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.2)' };
+    return { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)' };
   };
+
+  const scoreBgStyle = getScoreBgTint(currentScore);
 
   return (
     <div className="left-panel">
@@ -89,19 +103,24 @@ export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeat
           </select>
         </div>
 
-        <div className="live-score-preview">
+        <div className="live-score-preview" style={{...scoreBgStyle, border: `1px solid ${scoreBgStyle.borderColor || 'var(--border-color)'}` }}>
           <div className="live-score-label">Live RICE Score</div>
           <div className={`live-score-value ${getScoreColorClass(currentScore)}`}>
             {currentScore !== null ? currentScore : '—'}
           </div>
+          {currentScore !== null && form.reach && form.impact && form.confidence && form.effort && (
+            <div className="live-score-breakdown">
+              ({form.reach} reach × {form.impact} impact × {form.confidence}% conf) ÷ {form.effort} effort = {currentScore}
+            </div>
+          )}
         </div>
 
         <button 
-          className="btn btn-primary" 
+          className={`btn ${addedFeedback ? 'btn-success-feedback' : 'btn-primary'}`}
           onClick={handleAdd}
           disabled={!form.name || !form.reach || !form.effort || form.effort <= 0}
         >
-          Add Feature
+          {addedFeedback ? <><Check size={16} /> Added!</> : 'Add Feature'}
         </button>
       </div>
 

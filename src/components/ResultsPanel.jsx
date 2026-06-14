@@ -1,12 +1,25 @@
-import { useState, Fragment } from 'react';
-import { Layers } from 'lucide-react';
-import { calculateRiceScore, getScoreColorClass, getPriorityBadgeInfo, CATEGORIES, getCategoryColor } from '../utils';
+import { useState, Fragment, useRef } from 'react';
+import { Layers, Trash2, Download } from 'lucide-react';
+import { calculateRiceScore, getPriorityBadgeInfo, CATEGORIES, getCategoryColor } from '../utils';
+import PriorityMatrix from './PriorityMatrix';
 
-export default function ResultsPanel({ features, onLoadSample }) {
+const getDetailedScoreColor = (score) => {
+  if (score === null) return 'score-none';
+  if (score > 300) return 'score-ultra';
+  if (score > 150) return 'score-violet';
+  if (score >= 75) return 'score-sky';
+  if (score >= 25) return 'score-med';
+  return 'score-muted';
+};
+
+export default function ResultsPanel({ features, onLoadSample, onDeleteFeature, lastAddedId }) {
   const [filterCat, setFilterCat] = useState('All');
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('rice'); // rice, reach, impact, effort
+  const [sortBy, setSortBy] = useState('rice');
   const [expandedRow, setExpandedRow] = useState(null);
+  const [activeTab, setActiveTab] = useState('list');
+  const rowRefs = useRef({});
+  const highlightId = lastAddedId;
 
   if (!features || features.length < 2) {
     return (
@@ -21,7 +34,6 @@ export default function ResultsPanel({ features, onLoadSample }) {
     );
   }
 
-  // Calculate scores and filter/sort
   const processedFeatures = features.map(f => ({
     ...f,
     score: calculateRiceScore(f.reach, f.impact, f.confidence, f.effort)
@@ -41,11 +53,35 @@ export default function ResultsPanel({ features, onLoadSample }) {
     return 0;
   });
 
-  // Stats
   const validScores = processedFeatures.filter(f => f.score !== null);
   const avgRice = validScores.length ? Math.round(validScores.reduce((acc, f) => acc + f.score, 0) / validScores.length) : 0;
   const topFeature = processedFeatures.length > 0 ? [...processedFeatures].sort((a,b) => (b.score||0)-(a.score||0))[0] : null;
   const quickWins = processedFeatures.filter(f => f.score > 100 && f.effort <= 2).length;
+
+  const handleExportCSV = () => {
+    const allSorted = [...processedFeatures].sort((a,b) => (b.score||0)-(a.score||0));
+    const headers = ['Rank','Feature Name','Category','Reach','Impact','Confidence','Effort','RICE Score','Priority'];
+    const rows = allSorted.map((f, i) => {
+      const badge = getPriorityBadgeInfo(f.score);
+      return [i+1, `"${f.name}"`, f.category, f.reach, f.impact, f.confidence, f.effort, f.score, badge.text];
+    });
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `priorityiq_features_${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getRankStyle = (rank) => {
+    if (rank === 1) return { borderLeft: '3px solid #fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.04)' };
+    if (rank === 2) return { borderLeft: '3px solid #94a3b8', backgroundColor: 'rgba(148, 163, 184, 0.03)' };
+    if (rank === 3) return { borderLeft: '3px solid #cd7f32', backgroundColor: 'rgba(205, 127, 50, 0.03)' };
+    return {};
+  };
 
   return (
     <div className="right-panel">
@@ -66,7 +102,7 @@ export default function ResultsPanel({ features, onLoadSample }) {
             <div className="stat-value text-accent" style={{fontSize: '1.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{topFeature ? topFeature.name : '-'}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Quick Wins (High Score, Low Effort)</div>
+            <div className="stat-label">Quick Wins</div>
             <div className="stat-value text-success">{quickWins}</div>
           </div>
         </div>
@@ -92,81 +128,120 @@ export default function ResultsPanel({ features, onLoadSample }) {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="table-container">
-          <table className="results-table">
-            <thead>
-              <tr>
-                <th className="col-rank">Rank</th>
-                <th className="col-feature">Feature</th>
-                <th className="col-category">Category</th>
-                <th className="col-metric" title="Reach">R</th>
-                <th className="col-metric" title="Impact">I</th>
-                <th className="col-metric" title="Confidence">C</th>
-                <th className="col-metric" title="Effort">E</th>
-                <th className="col-score">Score</th>
-                <th className="col-badge">Priority</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((feature, idx) => {
-                const rank = idx + 1;
-                let rankDisplay = `#${rank}`;
-                if (rank === 1) rankDisplay = '🥇';
-                if (rank === 2) rankDisplay = '🥈';
-                if (rank === 3) rankDisplay = '🥉';
+        {/* Tabs + Export */}
+        <div className="results-toolbar">
+          <div className="view-tabs">
+            <button className={`view-tab ${activeTab === 'list' ? 'active' : ''}`} onClick={() => setActiveTab('list')}>
+              Ranked List
+            </button>
+            <button className={`view-tab ${activeTab === 'matrix' ? 'active' : ''}`} onClick={() => setActiveTab('matrix')}>
+              Priority Matrix
+            </button>
+          </div>
+          {activeTab === 'list' && (
+            <button className="btn btn-secondary btn-small" onClick={handleExportCSV}>
+              <Download size={14} /> Export CSV
+            </button>
+          )}
+        </div>
 
-                const isExpanded = expandedRow === feature.id;
-                const badgeInfo = getPriorityBadgeInfo(feature.score);
+        {/* Matrix View */}
+        {activeTab === 'matrix' && (
+          <PriorityMatrix features={features} />
+        )}
 
-                return (
-                  <Fragment key={feature.id}>
-                    <tr onClick={() => setExpandedRow(isExpanded ? null : feature.id)} style={{cursor: 'pointer'}}>
-                      <td className="col-rank">{rankDisplay}</td>
-                      <td className="col-feature">
-                        <div className="feature-cell-name">{feature.name}</div>
-                        {!isExpanded && <div className="feature-cell-desc">{feature.description || 'No description'}</div>}
-                      </td>
-                      <td className="col-category">
-                        <div className="tag" style={{backgroundColor: `${getCategoryColor(feature.category)}20`, color: getCategoryColor(feature.category)}}>
-                          {feature.category}
-                        </div>
-                      </td>
-                      <td className="col-metric">{feature.reach}</td>
-                      <td className="col-metric">{feature.impact}</td>
-                      <td className="col-metric">{feature.confidence}%</td>
-                      <td className="col-metric">{feature.effort}w</td>
-                      <td className="col-score">
-                        <span className={getScoreColorClass(feature.score)}>{feature.score}</span>
-                      </td>
-                      <td className="col-badge">
-                        <span className={`priority-badge ${badgeInfo.class}`}>{badgeInfo.text}</span>
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr className="editing-row">
-                        <td colSpan={9} style={{padding: '1.5rem'}}>
-                          <div style={{color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 600}}>Description:</div>
-                          <p style={{marginBottom: '1rem', lineHeight: 1.5}}>{feature.description || 'No description provided.'}</p>
-                          <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
-                            Score Calculation: ({feature.reach} × {feature.impact} × {feature.confidence/100}) / {feature.effort} = {feature.score}
+        {/* Table View */}
+        {activeTab === 'list' && (
+          <div className="table-container">
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th className="col-rank">Rank</th>
+                  <th className="col-feature">Feature</th>
+                  <th className="col-category">Category</th>
+                  <th className="col-metric" title="Reach">R</th>
+                  <th className="col-metric" title="Impact">I</th>
+                  <th className="col-metric" title="Confidence">C</th>
+                  <th className="col-metric" title="Effort">E</th>
+                  <th className="col-score">Score</th>
+                  <th className="col-badge">Priority</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((feature, idx) => {
+                  const rank = idx + 1;
+                  let rankDisplay = `#${rank}`;
+                  if (rank === 1) rankDisplay = '🥇';
+                  if (rank === 2) rankDisplay = '🥈';
+                  if (rank === 3) rankDisplay = '🥉';
+
+                  const isExpanded = expandedRow === feature.id;
+                  const badgeInfo = getPriorityBadgeInfo(feature.score);
+                  const isHighlighted = highlightId === feature.id;
+
+                  return (
+                    <Fragment key={feature.id}>
+                      <tr
+                        ref={el => rowRefs.current[feature.id] = el}
+                        onClick={() => setExpandedRow(isExpanded ? null : feature.id)}
+                        style={{cursor: 'pointer', ...getRankStyle(rank)}}
+                        className={isHighlighted ? 'row-highlight-flash' : ''}
+                      >
+                        <td className="col-rank">{rankDisplay}</td>
+                        <td className="col-feature">
+                          <div className="feature-cell-name">{feature.name}</div>
+                          {!isExpanded && <div className="feature-cell-desc">{feature.description || 'No description'}</div>}
+                        </td>
+                        <td className="col-category">
+                          <div className="tag" style={{backgroundColor: `${getCategoryColor(feature.category)}20`, color: getCategoryColor(feature.category)}}>
+                            {feature.category}
                           </div>
                         </td>
+                        <td className="col-metric">{feature.reach}</td>
+                        <td className="col-metric">{feature.impact}</td>
+                        <td className="col-metric">{feature.confidence}%</td>
+                        <td className="col-metric">{feature.effort}w</td>
+                        <td className="col-score">
+                          <span className={getDetailedScoreColor(feature.score)}>{feature.score}</span>
+                        </td>
+                        <td className="col-badge">
+                          <span className={`priority-badge ${badgeInfo.class}`}>{badgeInfo.text}</span>
+                        </td>
                       </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-              {sorted.length === 0 && (
-                <tr>
-                  <td colSpan={9} style={{textAlign: 'center', padding: '3rem', color: 'var(--text-muted)'}}>
-                    No features match your current filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      {isExpanded && (
+                        <tr className="expanded-detail-row">
+                          <td colSpan={9}>
+                            <div className="expanded-content">
+                              <div className="expanded-desc">
+                                <div className="expanded-label">Description</div>
+                                <p>{feature.description || 'No description provided.'}</p>
+                              </div>
+                              <div className="expanded-calc">
+                                Score: ({feature.reach} × {feature.impact} × {feature.confidence}%) ÷ {feature.effort} = <strong className={getDetailedScoreColor(feature.score)}>{feature.score}</strong>
+                              </div>
+                              <div className="expanded-actions">
+                                <button className="btn btn-danger btn-small" onClick={(e) => { e.stopPropagation(); onDeleteFeature(feature.id); setExpandedRow(null); }}>
+                                  <Trash2 size={14} /> Delete
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+                {sorted.length === 0 && (
+                  <tr>
+                    <td colSpan={9} style={{textAlign: 'center', padding: '3rem', color: 'var(--text-muted)'}}>
+                      No features match your current filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
       </div>
     </div>
