@@ -43,10 +43,9 @@ export default function FeatureInputPanel({ features, onAddFeature, onDeleteFeat
   // Live score preview background tint
   const getScoreBgTint = (score) => {
     if (score === null) return {};
-    if (score > 200) return { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.2)' };
-    if (score > 100) return { backgroundColor: 'rgba(124, 58, 237, 0.08)', borderColor: 'rgba(124, 58, 237, 0.2)' };
-    if (score >= 50) return { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.2)' };
-    return { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)' };
+    if (score > 200) return { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.2)' }; // Green
+    if (score >= 50) return { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.2)' }; // Amber
+    return { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)' }; // Red
   };
 
   const scoreBgStyle = getScoreBgTint(currentScore);

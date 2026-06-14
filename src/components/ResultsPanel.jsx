@@ -1,5 +1,5 @@
 import { useState, Fragment, useRef } from 'react';
-import { Layers, Trash2, Download } from 'lucide-react';
+import { Layers, Trash2, Download, Edit2 } from 'lucide-react';
 import { calculateRiceScore, getPriorityBadgeInfo, CATEGORIES, getCategoryColor } from '../utils';
 import PriorityMatrix from './PriorityMatrix';
 
@@ -77,10 +77,10 @@ export default function ResultsPanel({ features, onLoadSample, onDeleteFeature, 
   };
 
   const getRankStyle = (rank) => {
-    if (rank === 1) return { borderLeft: '3px solid #fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.04)' };
-    if (rank === 2) return { borderLeft: '3px solid #94a3b8', backgroundColor: 'rgba(148, 163, 184, 0.03)' };
-    if (rank === 3) return { borderLeft: '3px solid #cd7f32', backgroundColor: 'rgba(205, 127, 50, 0.03)' };
-    return {};
+    if (rank === 1) return { borderLeft: '3px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.05)' };
+    if (rank === 2) return { borderLeft: '3px solid #9ca3af' };
+    if (rank === 3) return { borderLeft: '3px solid #b45309' };
+    return { borderLeft: '3px solid transparent' };
   };
 
   return (
@@ -220,6 +220,9 @@ export default function ResultsPanel({ features, onLoadSample, onDeleteFeature, 
                                 Score: ({feature.reach} × {feature.impact} × {feature.confidence}%) ÷ {feature.effort} = <strong className={getDetailedScoreColor(feature.score)}>{feature.score}</strong>
                               </div>
                               <div className="expanded-actions">
+                                <button className="btn btn-secondary btn-small" onClick={(e) => { e.stopPropagation(); alert('Edit functionality to be implemented'); }} style={{ color: 'var(--accent)' }}>
+                                  <Edit2 size={14} /> Edit
+                                </button>
                                 <button className="btn btn-danger btn-small" onClick={(e) => { e.stopPropagation(); onDeleteFeature(feature.id); setExpandedRow(null); }}>
                                   <Trash2 size={14} /> Delete
                                 </button>
